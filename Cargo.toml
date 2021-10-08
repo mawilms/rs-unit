@@ -13,6 +13,7 @@ keywords = ["testing", "bdd", "tdd"]
 categories = ["development-tools", "development-tools::testing", "development-tools::profiling"]
 
 [dependencies]
+syn = { version = "^1", features = ["full"]}
 
 [lib]
 name = "rs_unit"
