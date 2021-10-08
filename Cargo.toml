@@ -1,0 +1,23 @@
+[package]
+name = "RsUnit"
+version = "0.0.0"
+authors = ["Marius Wilms <info@mariuswilms.dev>"]
+edition = "2018"
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/mawilms/rs-unit"
+description = """
+RsUnit is a testing crate similar to Elixirs ExUnit.
+"""
+keywords = ["testing", "bdd", "tdd"]
+categories = ["development-tools", "development-tools::testing", "development-tools::profiling"]
+
+[dependencies]
+
+[lib]
+name = "rs_unit"
+path = "src/lib.rs"
+
+[[bin]]
+name = "rs_unit_bin"
+path = "src/bin/main.rs"
