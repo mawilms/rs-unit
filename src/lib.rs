@@ -1,7 +1,10 @@
 #![warn(clippy::all, clippy::pedantic)]
 
-pub fn hello_world() {
-    println!("Hello World");
+use proc_macro::TokenStream;
+
+#[proc_macro]
+pub fn rs_unit(input: TokenStream) -> TokenStream {
+    input
 }
 
 #[cfg(test)]
