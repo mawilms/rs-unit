@@ -5,6 +5,7 @@ use syn::parse_macro_input;
 
 use self::keywords::Describe;
 
+mod generate;
 mod keywords;
 
 #[proc_macro]

@@ -15,9 +15,9 @@ mod kw {
 pub struct Describe {
     name: String,
     braces: syn::token::Brace,
-    setup: Option<Vec<Setup>>,
+    setup: Vec<Setup>,
     tests: Vec<Test>,
-    teardown: Option<Vec<Teardown>>,
+    teardown: Vec<Teardown>,
 }
 
 impl syn::parse::Parse for Describe {
@@ -29,7 +29,7 @@ impl syn::parse::Parse for Describe {
         let braces = syn::braced!(content in input);
 
         let mut setup = Vec::<Setup>::new();
-        while !content.is_empty() {
+        while content.peek(kw::setup) {
             setup.push(content.parse()?);
         }
 
@@ -42,16 +42,16 @@ impl syn::parse::Parse for Describe {
         //eprintln!("{:#?}", tests);
 
         let mut teardown = Vec::<Teardown>::new();
-        while !content.is_empty() {
+        while content.peek(kw::teardown) {
             teardown.push(content.parse()?);
         }
 
         Ok(Self {
             name,
             braces,
-            setup: Some(setup),
+            setup,
             tests,
-            teardown: Some(teardown),
+            teardown,
         })
     }
 }
