@@ -1,32 +1,36 @@
 use syn::{
     braced,
     parse::{Parse, ParseStream},
-    Ident, LitStr, Result,
+    token::Brace,
+    Block, Ident, LitStr, Result,
 };
 
 mod kw {
-    syn::custom_keyword!(describe);
-    syn::custom_keyword!(setup);
-    syn::custom_keyword!(test);
-    syn::custom_keyword!(teardown);
+    use syn::custom_keyword;
+
+    custom_keyword!(describe);
+    custom_keyword!(setup);
+    custom_keyword!(test);
+    custom_keyword!(teardown);
 }
 
 #[derive(Debug)]
-pub struct Describe {
-    name: String,
-    braces: syn::token::Brace,
-    setup: Vec<Setup>,
-    tests: Vec<Test>,
-    teardown: Vec<Teardown>,
+pub struct Root {
+    pub ident: Ident,
+    pub name: String,
+    braces: Brace,
+    pub setup: Vec<Setup>,
+    pub tests: Vec<Test>,
+    pub teardown: Vec<Teardown>,
 }
 
-impl syn::parse::Parse for Describe {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+impl Parse for Root {
+    fn parse(input: ParseStream) -> Result<Self> {
         let _describe = input.parse::<kw::describe>()?;
-        let name = input.parse::<syn::LitStr>()?.value();
+        let name = input.parse::<LitStr>()?.value();
 
         let content;
-        let braces = syn::braced!(content in input);
+        let braces = braced!(content in input);
 
         let mut setup = Vec::<Setup>::new();
         while content.peek(kw::setup) {
@@ -36,10 +40,8 @@ impl syn::parse::Parse for Describe {
         let mut tests = Vec::<Test>::new();
 
         while !content.is_empty() {
-            eprintln!("{:#?}", content);
             tests.push(content.parse()?);
         }
-        //eprintln!("{:#?}", tests);
 
         let mut teardown = Vec::<Teardown>::new();
         while content.peek(kw::teardown) {
@@ -47,6 +49,7 @@ impl syn::parse::Parse for Describe {
         }
 
         Ok(Self {
+            ident: input.parse::<Ident>()?,
             name,
             braces,
             setup,
@@ -57,52 +60,54 @@ impl syn::parse::Parse for Describe {
 }
 
 #[derive(Debug)]
-struct Test {
-    name: String,
-    content: syn::Block,
+pub struct Test {
+    pub ident: Ident,
+    pub name: String,
+    pub content: Block,
 }
 
-impl syn::parse::Parse for Test {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+impl Parse for Test {
+    fn parse(input: ParseStream) -> Result<Self> {
         let _test = input.parse::<kw::test>()?;
-        let name = input.parse::<syn::LitStr>()?.value();
+        let name = input.parse::<LitStr>()?.value();
         Ok(Self {
+            ident: input.parse::<Ident>()?,
             name,
-            content: input.parse::<syn::Block>()?,
+            content: input.parse::<Block>()?,
         })
     }
 }
 
 #[derive(Debug)]
-struct Setup {
-    name: String,
-    content: syn::Block,
+pub struct Setup {
+    pub name: String,
+    pub content: Block,
 }
 
-impl syn::parse::Parse for Setup {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+impl Parse for Setup {
+    fn parse(input: ParseStream) -> Result<Self> {
         let _test = input.parse::<kw::setup>()?;
-        let name = input.parse::<syn::LitStr>()?.value();
+        let name = input.parse::<LitStr>()?.value();
         Ok(Self {
             name,
-            content: input.parse::<syn::Block>()?,
+            content: input.parse::<Block>()?,
         })
     }
 }
 
 #[derive(Debug)]
-struct Teardown {
-    name: String,
-    content: syn::Block,
+pub struct Teardown {
+    pub name: String,
+    pub content: Block,
 }
 
-impl syn::parse::Parse for Teardown {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+impl Parse for Teardown {
+    fn parse(input: ParseStream) -> Result<Self> {
         let _test = input.parse::<kw::teardown>()?;
-        let name = input.parse::<syn::LitStr>()?.value();
+        let name = input.parse::<LitStr>()?.value();
         Ok(Self {
             name,
-            content: input.parse::<syn::Block>()?,
+            content: input.parse::<Block>()?,
         })
     }
 }

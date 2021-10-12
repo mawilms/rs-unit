@@ -3,20 +3,24 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::parse_macro_input;
 
-use self::keywords::Describe;
+use crate::generate::Generate;
+
+use self::keywords::Root;
 
 mod generate;
 mod keywords;
 
 #[proc_macro]
 pub fn rs_unit(input: TokenStream) -> TokenStream {
-    let describe = parse_macro_input!(input as Describe);
-    //eprintln!("{:#?}", describe);
+    let root = parse_macro_input!(input as Root);
+    let code = root.generate();
 
     let expanded = quote! {
         #[cfg(test)]
         mod tests {
+            use super::*;
 
+            #(#code)
         }
     };
 
