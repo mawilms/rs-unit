@@ -16,7 +16,6 @@ mod kw {
 
 #[derive(Debug)]
 pub struct Root {
-    pub ident: Ident,
     pub name: String,
     braces: Brace,
     pub setup: Vec<Setup>,
@@ -49,7 +48,6 @@ impl Parse for Root {
         }
 
         Ok(Self {
-            ident: input.parse::<Ident>()?,
             name,
             braces,
             setup,
@@ -61,7 +59,6 @@ impl Parse for Root {
 
 #[derive(Debug)]
 pub struct Test {
-    pub ident: Ident,
     pub name: String,
     pub content: Block,
 }
@@ -70,8 +67,8 @@ impl Parse for Test {
     fn parse(input: ParseStream) -> Result<Self> {
         let _test = input.parse::<kw::test>()?;
         let name = input.parse::<LitStr>()?.value();
+
         Ok(Self {
-            ident: input.parse::<Ident>()?,
             name,
             content: input.parse::<Block>()?,
         })
