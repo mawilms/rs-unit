@@ -1,6 +1,6 @@
-//!
+//! Contains methods to generate the manipulated `Tokenstreams` based of the parsed AST.
 use proc_macro2::{Ident, TokenStream};
-use quote::quote;
+use quote::quote_spanned;
 
 use crate::keywords::{Describe, Root, Setup, Teardown, Test};
 
@@ -8,6 +8,14 @@ pub trait Generate {
     fn generate(&self) -> TokenStream;
 }
 
+/// Generates the outer wrapper test wrapper.
+///
+/// ```rust
+/// #[cfg(test)]
+/// mod tests {
+///     Here are the describe blocks
+/// }
+/// ```
 impl Generate for Root {
     fn generate(&self) -> TokenStream {
         let ident = &self.ident;
@@ -18,7 +26,7 @@ impl Generate for Root {
             .map(|d| d.generate())
             .collect::<Vec<_>>();
 
-        let root_block = quote! {
+        let root_block = quote_spanned! {ident.span()=>
             #[cfg(test)]
             mod #ident {
                 #[allow(unused_imports)]
@@ -32,12 +40,19 @@ impl Generate for Root {
     }
 }
 
+/// Generates a module block that groups related tests. These modules are located in the `Root` block.
+///
+/// ```rust
+/// mod add_numbers {
+///     Here are your tests
+/// }
+/// ```
 impl Generate for Describe {
     fn generate(&self) -> TokenStream {
         let ident = &self.ident;
         let tests = &self.tests.iter().map(|t| t.generate()).collect::<Vec<_>>();
 
-        let describe_block = quote! {
+        let describe_block = quote_spanned! {ident.span()=>
             mod #ident {
                 use super::*;
 
@@ -49,7 +64,7 @@ impl Generate for Describe {
     }
 }
 
-/// Generates a valid Rust test function.
+/// Generates a valid Rust test function. These function are located within the modules where they belong to.
 ///
 /// # Example
 ///
@@ -59,9 +74,12 @@ impl Generate for Describe {
 ///   let result = add(1,1);
 ///   assert_eq!(result, 2);
 /// }
+/// ```
 impl Generate for Test {
     fn generate(&self) -> TokenStream {
-        let sanitied_name = &format!("test_{}", self.name)
+        let sanitied_name = &self
+            .name
+            .to_string()
             .to_lowercase()
             .replace(" ", "_")
             .replace(":", "");
@@ -69,14 +87,14 @@ impl Generate for Test {
 
         let block = &self.content;
 
-        let stream = quote! {
+        let test_block = quote_spanned! {new_ident.span()=>
             #[test]
             fn #new_ident() {
                 #block
             }
         };
 
-        stream
+        test_block
     }
 }
 

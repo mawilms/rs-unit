@@ -1,6 +1,33 @@
+//! `RsUnit` is a unit testing framework for Rust. It's a wrapper around the native `cargo test` interface.
+//! `RsUnit` mimics the structure and behavior of [`ExUnit`](https://hexdocs.pm/ex_unit/1.12/ExUnit.html).
+//!
+//! - **Easy to use** Import the macro and build organized unit tests with the `describe` and `test` blocks.
+//!
+//! # Example
+//!
+//! ```rust
+//! use rs_unit::rs_unit;
+//!
+//! fn add(a: i32, b: i32) -> i32 {
+//!     a + b
+//! }
+//!
+//! rs_unit! {
+//!     describe "Addition" {
+//!         test "success: Add positive numbers" {
+//!             let result = add(1,1);
+//!             assert_eq!(result, 2);
+//!         }
+//!
+//!        test "success: Add negative numbers" {
+//!             let result = add(-2, -2);
+//!             assert_eq!(result, -4);
+//!         }
+//!     }
+//! }
+//! ```
 #![warn(clippy::all, clippy::pedantic)]
 use proc_macro::TokenStream;
-use quote::quote;
 use syn::parse_macro_input;
 
 use crate::generate::Generate;
@@ -15,51 +42,5 @@ pub fn rs_unit(input: TokenStream) -> TokenStream {
     let root = parse_macro_input!(input as Root);
     let code = root.generate();
 
-    let expanded = quote! {
-        #[cfg(test)]
-        mod tests {
-            use super::*;
-
-            #code
-        }
-    };
-
-    expanded.into()
+    code.into()
 }
-
-// use rs_unit::rs_unit;
-
-// fn add(a: i32, b: i32) -> i32 {
-//     a + b
-// }
-
-// fn sub(a: i32, b: i32) -> i32 {
-//     a - b
-// }
-
-// fn main() {
-//     rs_unit! {
-
-//         describe "Test addition" {
-
-//             setup "Create database" {
-
-//             }
-
-            // test "success: Add positive numbers" {
-            //     let result = add(1,1);
-            //     assert_eq!(result, 2);
-            // }
-
-//             test "success: Add negative numbers" {
-//                 let result = add(-2, -2);
-//                 assert_eq!(result, -4);
-//             }
-
-//             teardown "Delete database" {
-
-//             }
-
-//         }
-//     }
-// }
