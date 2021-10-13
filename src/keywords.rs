@@ -5,6 +5,20 @@ use syn::{
     Block, Ident, LitStr, Result,
 };
 
+use std::{
+    process::id,
+    sync::atomic::{AtomicUsize, Ordering},
+};
+
+static GLOBAL_RSUNIT_COUNT: AtomicUsize = AtomicUsize::new(0);
+
+fn get_root_name() -> proc_macro2::Ident {
+    let count = GLOBAL_RSUNIT_COUNT.fetch_add(1, Ordering::SeqCst);
+    let module_name = format!("rsunit_{}", count);
+
+    syn::Ident::new(&module_name, proc_macro2::Span::call_site())
+}
+
 mod kw {
     use syn::custom_keyword;
 
@@ -16,6 +30,7 @@ mod kw {
 
 #[derive(Debug)]
 pub struct Root {
+    pub ident: Ident,
     pub name: String,
     braces: Brace,
     pub setup: Vec<Setup>,
@@ -48,6 +63,7 @@ impl Parse for Root {
         }
 
         Ok(Self {
+            ident: get_root_name(),
             name,
             braces,
             setup,
@@ -59,16 +75,18 @@ impl Parse for Root {
 
 #[derive(Debug)]
 pub struct Test {
+    pub ident: Ident,
     pub name: String,
     pub content: Block,
 }
 
 impl Parse for Test {
     fn parse(input: ParseStream) -> Result<Self> {
-        let _test = input.parse::<kw::test>()?;
+        let ident = input.parse::<Ident>()?;
         let name = input.parse::<LitStr>()?.value();
 
         Ok(Self {
+            ident,
             name,
             content: input.parse::<Block>()?,
         })

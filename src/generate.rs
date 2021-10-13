@@ -1,4 +1,4 @@
-use proc_macro2::TokenStream;
+use proc_macro2::{Ident, TokenStream};
 use quote::quote;
 
 use crate::keywords::{Root, Setup, Teardown, Test};
@@ -9,11 +9,11 @@ pub trait Generate {
 
 impl Generate for Root {
     fn generate(&self) -> TokenStream {
-        let name = &self.name.to_lowercase().replace(" ", "_");
+        let ident = &self.ident;
         let tests = &self.tests.iter().map(|t| t.generate()).collect::<Vec<_>>();
 
         let root_block = quote! {
-            mod #name {
+            mod #ident {
                 #[allow(unused_imports)]
                 use super::*;
 
@@ -32,12 +32,13 @@ impl Generate for Test {
             .to_lowercase()
             .replace(" ", "_")
             .replace(":", "");
+        let new_ident = Ident::new(sanitied_name, self.ident.span());
 
         let block = &self.content;
 
         let stream = quote! {
             #[test]
-            fn #sanitied_name() {
+            fn #new_ident() {
                 #block
             }
         };

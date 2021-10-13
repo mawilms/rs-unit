@@ -21,7 +21,7 @@ pub fn rs_unit(input: TokenStream) -> TokenStream {
         mod tests {
             use super::*;
 
-
+            #code
         }
     };
 
