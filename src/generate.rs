@@ -18,8 +18,6 @@ impl Generate for Root {
             .map(|d| d.generate())
             .collect::<Vec<_>>();
 
-        eprintln!("{:#?}", self.describes);
-
         let root_block = quote! {
             #[cfg(test)]
             mod #ident {
@@ -77,7 +75,6 @@ impl Generate for Test {
                 #block
             }
         };
-        //eprintln!("{:#?}", stream);
 
         stream
     }
