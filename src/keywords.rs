@@ -1,9 +1,12 @@
 //! Contains all keywords that are used in `rs_unit`.
+use proc_macro2::TokenStream;
 use syn::{
     braced,
     parse::{Parse, ParseStream},
     Block, Ident, LitStr, Result,
 };
+
+use crate::generate::Generate;
 
 mod kw {
     use syn::custom_keyword;
@@ -38,9 +41,9 @@ impl Parse for Root {
 #[derive(Debug)]
 pub struct Describe {
     pub ident: Ident,
-    pub setup: Vec<Setup>,
+    pub setup: TokenStream,
     pub tests: Vec<Test>,
-    pub teardown: Vec<Teardown>,
+    pub teardown: TokenStream,
 }
 
 // Parses the Describe block. The pre- and postprocessing blocks are optional.
@@ -79,11 +82,29 @@ impl Parse for Describe {
             teardown.push(content.parse()?);
         }
 
+        if setup.len() > 1 {
+            panic!("More than one setup method");
+        }
+
+        if teardown.len() > 1 {
+            panic!("More than one teardown method");
+        }
+
+        let mut setup_stream = TokenStream::new();
+        if let Some(stream) = setup.into_iter().next() {
+            setup_stream = stream.generate();
+        }
+
+        let mut teardown_stream = TokenStream::new();
+        if let Some(stream) = teardown.into_iter().next() {
+            teardown_stream = stream.generate();
+        }
+
         Ok(Self {
             ident: Ident::new(&name, ident.span()),
-            setup,
+            setup: setup_stream,
             tests,
-            teardown,
+            teardown: teardown_stream,
         })
     }
 }
@@ -124,35 +145,35 @@ impl Parse for Test {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Setup {
-    pub name: String,
+    pub ident: Ident,
     pub content: Block,
 }
 
 impl Parse for Setup {
     fn parse(input: ParseStream) -> Result<Self> {
-        let _test = input.parse::<kw::setup>()?;
-        let name = input.parse::<LitStr>()?.value();
+        let ident = input.parse::<Ident>()?;
+
         Ok(Self {
-            name,
+            ident,
             content: input.parse::<Block>()?,
         })
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Teardown {
-    pub name: String,
+    pub ident: Ident,
     pub content: Block,
 }
 
 impl Parse for Teardown {
     fn parse(input: ParseStream) -> Result<Self> {
-        let _test = input.parse::<kw::teardown>()?;
-        let name = input.parse::<LitStr>()?.value();
+        let ident = input.parse::<Ident>()?;
+
         Ok(Self {
-            name,
+            ident,
             content: input.parse::<Block>()?,
         })
     }
