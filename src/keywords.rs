@@ -1,40 +1,25 @@
 //! Contains all keywords that are used in `rs_unit`.
-//!
 use syn::{
     braced,
     parse::{Parse, ParseStream},
-    token::Brace,
     Block, Ident, LitStr, Result,
 };
-
-use std::sync::atomic::{AtomicUsize, Ordering};
-
-static GLOBAL_RSUNIT_COUNT: AtomicUsize = AtomicUsize::new(0);
-
-fn get_root_name() -> proc_macro2::Ident {
-    let count = GLOBAL_RSUNIT_COUNT.fetch_add(1, Ordering::SeqCst);
-    let module_name = format!("rsunit_{}", count);
-
-    syn::Ident::new(&module_name, proc_macro2::Span::call_site())
-}
 
 mod kw {
     use syn::custom_keyword;
 
-    custom_keyword!(describe);
     custom_keyword!(setup);
-    custom_keyword!(test);
     custom_keyword!(teardown);
 }
 
-///
-///
+// Parsing entrypoint of the whole application.
 #[derive(Debug)]
 pub struct Root {
     pub ident: Ident,
     pub describes: Vec<Describe>,
 }
 
+// Parses all describe blocks within the `rs_unit!` macro.
 impl Parse for Root {
     fn parse(input: ParseStream) -> Result<Self> {
         let mut describes = Vec::<Describe>::new();
@@ -43,23 +28,29 @@ impl Parse for Root {
             describes.push(input.parse()?);
         }
 
-        Ok(Self {
-            ident: get_root_name(),
-            describes,
-        })
+        let ident = Ident::new("tests", proc_macro2::Span::call_site());
+
+        Ok(Self { ident, describes })
     }
 }
 
+// Describe block that contains the actual tests and any pre- and postprocessing blocks.
 #[derive(Debug)]
 pub struct Describe {
     pub ident: Ident,
-    pub name: String,
-    braces: Brace,
     pub setup: Vec<Setup>,
     pub tests: Vec<Test>,
     pub teardown: Vec<Teardown>,
 }
 
+// Parses the Describe block. The pre- and postprocessing blocks are optional.
+//
+// # Example
+//
+// ```
+// describe "Addition" {
+//     Here are the actual test blocks
+// }
 impl Parse for Describe {
     fn parse(input: ParseStream) -> Result<Self> {
         let ident = input.parse::<Ident>()?;
@@ -70,7 +61,7 @@ impl Parse for Describe {
             .replace(" ", "_");
 
         let content;
-        let braces = braced!(content in input);
+        let _braces = braced!(content in input);
 
         let mut setup = Vec::<Setup>::new();
         while content.peek(kw::setup) {
@@ -90,8 +81,6 @@ impl Parse for Describe {
 
         Ok(Self {
             ident: Ident::new(&name, ident.span()),
-            name,
-            braces,
             setup,
             tests,
             teardown,
@@ -99,23 +88,7 @@ impl Parse for Describe {
     }
 }
 
-/// Test block that is converted to a test function.
-///
-/// # Example
-/// ```rust
-/// test "success: Add positive numbers" {
-///   let result = add(1,1);
-///   assert_eq!(result, 2);
-/// }
-/// ```
-///
-/// ```rust
-/// #[test]
-/// fn success_add_positive_numbers() {
-///   let result = add(1,1);
-///   assert_eq!(result, 2);
-/// }
-/// ```
+// Test block that is converted to a test function.
 #[derive(Debug)]
 pub struct Test {
     pub ident: Ident,
@@ -123,20 +96,25 @@ pub struct Test {
     pub content: Block,
 }
 
-/// Parses a test block.
-///
-/// # Example
-///
-/// ```rust
-/// test "success: Add positive numbers" {
-///   let result = add(1,1);
-///   assert_eq!(result, 2);
-/// }
-/// ```
+// Parses a test block.
+//
+// # Example
+//
+// ```
+// test "success: Add positive numbers" {
+//   let result = add(1,1);
+//   assert_eq!(result, 2);
+// }
+// ```
 impl Parse for Test {
     fn parse(input: ParseStream) -> Result<Self> {
         let ident = input.parse::<Ident>()?;
-        let name = input.parse::<LitStr>()?.value();
+        let name = input
+            .parse::<LitStr>()?
+            .value()
+            .to_lowercase()
+            .replace(" ", "_")
+            .replace(":", "");
 
         Ok(Self {
             ident,
