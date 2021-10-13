@@ -1,3 +1,5 @@
+//! Contains all keywords that are used in `rs_unit`.
+//!
 use syn::{
     braced,
     parse::{Parse, ParseStream},
@@ -5,10 +7,7 @@ use syn::{
     Block, Ident, LitStr, Result,
 };
 
-use std::{
-    process::id,
-    sync::atomic::{AtomicUsize, Ordering},
-};
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 static GLOBAL_RSUNIT_COUNT: AtomicUsize = AtomicUsize::new(0);
 
@@ -28,8 +27,31 @@ mod kw {
     custom_keyword!(teardown);
 }
 
+///
+///
 #[derive(Debug)]
 pub struct Root {
+    pub ident: Ident,
+    pub describes: Vec<Describe>,
+}
+
+impl Parse for Root {
+    fn parse(input: ParseStream) -> Result<Self> {
+        let mut describes = Vec::<Describe>::new();
+
+        while !input.is_empty() {
+            describes.push(input.parse()?);
+        }
+
+        Ok(Self {
+            ident: get_root_name(),
+            describes,
+        })
+    }
+}
+
+#[derive(Debug)]
+pub struct Describe {
     pub ident: Ident,
     pub name: String,
     braces: Brace,
@@ -38,10 +60,14 @@ pub struct Root {
     pub teardown: Vec<Teardown>,
 }
 
-impl Parse for Root {
+impl Parse for Describe {
     fn parse(input: ParseStream) -> Result<Self> {
-        let _describe = input.parse::<kw::describe>()?;
-        let name = input.parse::<LitStr>()?.value();
+        let ident = input.parse::<Ident>()?;
+        let name = input
+            .parse::<LitStr>()?
+            .value()
+            .to_lowercase()
+            .replace(" ", "_");
 
         let content;
         let braces = braced!(content in input);
@@ -63,7 +89,7 @@ impl Parse for Root {
         }
 
         Ok(Self {
-            ident: get_root_name(),
+            ident: Ident::new(&name, ident.span()),
             name,
             braces,
             setup,
@@ -73,6 +99,23 @@ impl Parse for Root {
     }
 }
 
+/// Test block that is converted to a test function.
+///
+/// # Example
+/// ```rust
+/// test "success: Add positive numbers" {
+///   let result = add(1,1);
+///   assert_eq!(result, 2);
+/// }
+/// ```
+///
+/// ```rust
+/// #[test]
+/// fn success_add_positive_numbers() {
+///   let result = add(1,1);
+///   assert_eq!(result, 2);
+/// }
+/// ```
 #[derive(Debug)]
 pub struct Test {
     pub ident: Ident,
@@ -80,6 +123,16 @@ pub struct Test {
     pub content: Block,
 }
 
+/// Parses a test block.
+///
+/// # Example
+///
+/// ```rust
+/// test "success: Add positive numbers" {
+///   let result = add(1,1);
+///   assert_eq!(result, 2);
+/// }
+/// ```
 impl Parse for Test {
     fn parse(input: ParseStream) -> Result<Self> {
         let ident = input.parse::<Ident>()?;

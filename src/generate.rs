@@ -1,7 +1,8 @@
+//!
 use proc_macro2::{Ident, TokenStream};
 use quote::quote;
 
-use crate::keywords::{Root, Setup, Teardown, Test};
+use crate::keywords::{Describe, Root, Setup, Teardown, Test};
 
 pub trait Generate {
     fn generate(&self) -> TokenStream;
@@ -10,22 +11,56 @@ pub trait Generate {
 impl Generate for Root {
     fn generate(&self) -> TokenStream {
         let ident = &self.ident;
-        let tests = &self.tests.iter().map(|t| t.generate()).collect::<Vec<_>>();
+
+        let describe_blocks = self
+            .describes
+            .iter()
+            .map(|d| d.generate())
+            .collect::<Vec<_>>();
+
+        eprintln!("{:#?}", self.describes);
 
         let root_block = quote! {
+            #[cfg(test)]
             mod #ident {
                 #[allow(unused_imports)]
                 use super::*;
 
-                #(#tests)*
+                #(#describe_blocks)*
             }
         };
-        //eprintln!("{:#?}", root_block);
 
         root_block
     }
 }
 
+impl Generate for Describe {
+    fn generate(&self) -> TokenStream {
+        let ident = &self.ident;
+        let tests = &self.tests.iter().map(|t| t.generate()).collect::<Vec<_>>();
+
+        let describe_block = quote! {
+            mod #ident {
+                use super::*;
+
+                #(#tests)*
+            }
+        };
+
+        describe_block
+    }
+}
+
+/// Generates a valid Rust test function.
+///
+/// # Example
+///
+/// ```rust
+/// #[test]
+/// fn success_add_positive_numbers() {
+///   let result = add(1,1);
+///   assert_eq!(result, 2);
+/// }
 impl Generate for Test {
     fn generate(&self) -> TokenStream {
         let sanitied_name = &format!("test_{}", self.name)
@@ -46,11 +81,6 @@ impl Generate for Test {
 
         stream
     }
-    // #[test]
-    //     fn add_positive_numbers() {
-    //         let result = add(1, 1);
-    //         assert_eq!(result, 2);
-    //     }
 }
 
 impl Generate for Setup {

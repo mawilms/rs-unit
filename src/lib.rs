@@ -14,7 +14,6 @@ mod keywords;
 pub fn rs_unit(input: TokenStream) -> TokenStream {
     let root = parse_macro_input!(input as Root);
     let code = root.generate();
-    eprintln!("{:#?}", code);
 
     let expanded = quote! {
         #[cfg(test)]
@@ -47,10 +46,10 @@ pub fn rs_unit(input: TokenStream) -> TokenStream {
 
 //             }
 
-//             test "success: Add positive numbers" {
-//                 let result = add(1,1);
-//                 assert_eq!(result, 2);
-//             }
+            // test "success: Add positive numbers" {
+            //     let result = add(1,1);
+            //     assert_eq!(result, 2);
+            // }
 
 //             test "success: Add negative numbers" {
 //                 let result = add(-2, -2);
