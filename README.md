@@ -1,5 +1,13 @@
-<!-- markdownlint-disable MD033 -->
-<h1 align="center">RsUnit</h1>
+<!-- markdownlint-disable MD033 MD041 -->
+<div align="center">
+
+# RsUnit
+
+![GitHub issues](https://img.shields.io/github/issues/mawilms/rs-unit)
+![Cargo Downloads](https://img.shields.io/crates/d/rs-unit)
+![Cargo Latest version](https://img.shields.io/crates/v/rs-unit)
+
+</div>
 
 <p align="center">⚠️⚠️ Important: This project is work in progress. <br>
 Only describe and test are at the moment implemented ⚠️⚠️</p>
