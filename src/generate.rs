@@ -116,7 +116,9 @@ impl Generate for Test {
             .replace(":", "");
         let new_ident = Ident::new(sanitied_name, self.ident.span());
 
+        let setup = setup;
         let block = &self.content;
+        let teardown = teardown;
 
         let test_block = quote_spanned! {new_ident.span()=>
             #[test]
