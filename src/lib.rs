@@ -2,6 +2,8 @@
 //! `RsUnit` mimics the structure and behavior of [`ExUnit`](https://hexdocs.pm/ex_unit/1.12/ExUnit.html).
 //!
 //! - **Easy to use** Import the macro and build organized unit tests with the `describe` and `test` blocks.
+//! - ** Simple testing setup** Create with `setup`, `setup_all`, `teardown` and `teardown_all` functions that
+//! are run once or before every test and keep the rest of your tests organized in blocks.
 //!
 //! # Example
 //!
