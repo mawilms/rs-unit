@@ -12,6 +12,7 @@ mod kw {
     use syn::custom_keyword;
 
     custom_keyword!(setup);
+    custom_keyword!(test);
     custom_keyword!(teardown);
 }
 
@@ -65,43 +66,39 @@ impl Parse for Describe {
             .replace("/", "_")
             .replace(":", "_");
 
-        let content;
-        let _braces = braced!(content in input);
+        let contents;
+        let _braces = braced!(contents in input);
 
-        let mut setup = Vec::<Setup>::new();
-
-        if content.peek(kw::setup) {
-            setup.push(content.parse()?);
-        }
-
-        let mut teardown = Vec::<Teardown>::new();
-
-        if content.peek(kw::teardown) {
-            teardown.push(content.parse()?);
-        }
-
+        let mut setup = None::<Setup>;
+        let mut teardown = None::<Teardown>;
         let mut tests = Vec::<Test>::new();
-
-        while !content.is_empty() {
-            tests.push(content.parse()?);
-        }
-
-        if setup.len() > 1 {
-            panic!("More than one setup method");
-        }
-
-        if teardown.len() > 1 {
-            panic!("More than one teardown method");
+        while !contents.is_empty() {
+            let snoopy = contents.lookahead1();
+            if snoopy.peek(kw::setup) {
+                let prev = setup.replace(contents.parse()?);
+                if prev.is_some() {
+                    return Err(contents.error("At most one `setup` can be provided"));
+                }
+            } else if snoopy.peek(kw::teardown) {
+                let prev = teardown.replace(contents.parse()?);
+                if prev.is_some() {
+                    return Err(contents.error("At most one `teardown` can be provided"));
+                }
+            } else if snoopy.peek(kw::test) {
+                tests.push(contents.parse()?);
+            } else {
+                return Err(snoopy.error());
+            }
         }
 
         let mut setup_stream = TokenStream::new();
-        if let Some(stream) = setup.into_iter().next() {
-            setup_stream = stream.generate();
+        if let Some(setup) = setup {
+            setup_stream = setup.generate();
         }
 
         let mut teardown_stream = TokenStream::new();
-        if let Some(stream) = teardown.into_iter().next() {
-            teardown_stream = stream.generate();
+        if let Some(teardown) = teardown {
+            teardown_stream = teardown.generate();
         }
 
         Ok(Self {
