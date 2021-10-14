@@ -61,25 +61,29 @@ impl Parse for Describe {
             .parse::<LitStr>()?
             .value()
             .to_lowercase()
-            .replace(" ", "_");
+            .replace(" ", "_")
+            .replace("/", "_")
+            .replace(":", "_");
 
         let content;
         let _braces = braced!(content in input);
 
         let mut setup = Vec::<Setup>::new();
-        while content.peek(kw::setup) {
+
+        if content.peek(kw::setup) {
             setup.push(content.parse()?);
+        }
+
+        let mut teardown = Vec::<Teardown>::new();
+
+        if content.peek(kw::teardown) {
+            teardown.push(content.parse()?);
         }
 
         let mut tests = Vec::<Test>::new();
 
         while !content.is_empty() {
             tests.push(content.parse()?);
-        }
-
-        let mut teardown = Vec::<Teardown>::new();
-        while content.peek(kw::teardown) {
-            teardown.push(content.parse()?);
         }
 
         if setup.len() > 1 {
