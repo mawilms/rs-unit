@@ -42,5 +42,7 @@ pub fn rs_unit(input: TokenStream) -> TokenStream {
     let root = parse_macro_input!(input as Root);
     let code = root.generate();
 
+    eprintln!("{:#?}", code);
+
     code.into()
 }
