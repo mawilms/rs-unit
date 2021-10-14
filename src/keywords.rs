@@ -1,14 +1,18 @@
 //! Contains all keywords that are used in `rs_unit`.
+use proc_macro2::TokenStream;
 use syn::{
     braced,
     parse::{Parse, ParseStream},
     Block, Ident, LitStr, Result,
 };
 
+use crate::generate::Generate;
+
 mod kw {
     use syn::custom_keyword;
 
     custom_keyword!(setup);
+    custom_keyword!(test);
     custom_keyword!(teardown);
 }
 
@@ -38,9 +42,9 @@ impl Parse for Root {
 #[derive(Debug)]
 pub struct Describe {
     pub ident: Ident,
-    pub setup: Vec<Setup>,
+    pub setup: TokenStream,
     pub tests: Vec<Test>,
-    pub teardown: Vec<Teardown>,
+    pub teardown: TokenStream,
 }
 
 // Parses the Describe block. The pre- and postprocessing blocks are optional.
@@ -58,32 +62,50 @@ impl Parse for Describe {
             .parse::<LitStr>()?
             .value()
             .to_lowercase()
-            .replace(" ", "_");
+            .replace(" ", "_")
+            .replace("/", "_")
+            .replace(":", "_");
 
-        let content;
-        let _braces = braced!(content in input);
+        let contents;
+        let _braces = braced!(contents in input);
 
-        let mut setup = Vec::<Setup>::new();
-        while content.peek(kw::setup) {
-            setup.push(content.parse()?);
-        }
-
+        let mut setup = None::<Setup>;
+        let mut teardown = None::<Teardown>;
         let mut tests = Vec::<Test>::new();
-
-        while !content.is_empty() {
-            tests.push(content.parse()?);
+        while !contents.is_empty() {
+            let snoopy = contents.lookahead1();
+            if snoopy.peek(kw::setup) {
+                let prev = setup.replace(contents.parse()?);
+                if prev.is_some() {
+                    return Err(contents.error("At most one `setup` can be provided"));
+                }
+            } else if snoopy.peek(kw::teardown) {
+                let prev = teardown.replace(contents.parse()?);
+                if prev.is_some() {
+                    return Err(contents.error("At most one `teardown` can be provided"));
+                }
+            } else if snoopy.peek(kw::test) {
+                tests.push(contents.parse()?);
+            } else {
+                return Err(snoopy.error());
+            }
         }
 
-        let mut teardown = Vec::<Teardown>::new();
-        while content.peek(kw::teardown) {
-            teardown.push(content.parse()?);
+        let mut setup_stream = TokenStream::new();
+        if let Some(setup) = setup {
+            setup_stream = setup.generate();
+        }
+
+        let mut teardown_stream = TokenStream::new();
+        if let Some(teardown) = teardown {
+            teardown_stream = teardown.generate();
         }
 
         Ok(Self {
             ident: Ident::new(&name, ident.span()),
-            setup,
+            setup: setup_stream,
             tests,
-            teardown,
+            teardown: teardown_stream,
         })
     }
 }
@@ -124,35 +146,35 @@ impl Parse for Test {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Setup {
-    pub name: String,
+    pub ident: Ident,
     pub content: Block,
 }
 
 impl Parse for Setup {
     fn parse(input: ParseStream) -> Result<Self> {
-        let _test = input.parse::<kw::setup>()?;
-        let name = input.parse::<LitStr>()?.value();
+        let ident = input.parse::<Ident>()?;
+
         Ok(Self {
-            name,
+            ident,
             content: input.parse::<Block>()?,
         })
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Teardown {
-    pub name: String,
+    pub ident: Ident,
     pub content: Block,
 }
 
 impl Parse for Teardown {
     fn parse(input: ParseStream) -> Result<Self> {
-        let _test = input.parse::<kw::teardown>()?;
-        let name = input.parse::<LitStr>()?.value();
+        let ident = input.parse::<Ident>()?;
+
         Ok(Self {
-            name,
+            ident,
             content: input.parse::<Block>()?,
         })
     }
