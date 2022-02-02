@@ -103,13 +103,13 @@ impl Generate for Describe {
 // ```
 impl Generate for Test {
     fn generate(&self) -> TokenStream {
-        let sanitied_name = &self
+        let sanitized_name = &self
             .name
             .to_string()
             .to_lowercase()
             .replace(" ", "_")
             .replace(":", "");
-        let new_ident = Ident::new(sanitied_name, self.ident.span());
+        let new_ident = Ident::new(sanitized_name, self.ident.span());
 
         let block = &self.content;
 
