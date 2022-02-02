@@ -75,7 +75,7 @@ impl Parse for Describe {
 
         let mut setup_all = None::<SetupAll>;
         let mut setup = None::<Setup>;
-        let mut teardown_all = None::<TeardownAll>;
+        //let mut teardown_all = None::<TeardownAll>;
         let mut teardown = None::<Teardown>;
         let mut tests = Vec::<Test>::new();
         while !contents.is_empty() {
@@ -90,11 +90,6 @@ impl Parse for Describe {
                 if prev.is_some() {
                     return Err(contents.error("At most one `setup` can be provided"));
                 }
-            } else if look_ahead.peek(kw::teardown_all) {
-                let prev = teardown_all.replace(contents.parse()?);
-                if prev.is_some() {
-                    return Err(contents.error("At most one `teardown` can be provided"));
-                }
             } else if look_ahead.peek(kw::teardown) {
                 let prev = teardown.replace(contents.parse()?);
                 if prev.is_some() {
@@ -105,6 +100,12 @@ impl Parse for Describe {
             } else {
                 return Err(look_ahead.error());
             }
+            // else if look_ahead.peek(kw::teardown_all) {
+            //     let prev = teardown_all.replace(contents.parse()?);
+            //     if prev.is_some() {
+            //         return Err(contents.error("At most one `teardown_all` can be provided"));
+            //     }
+            // }
         }
 
         let mut setup_all_stream = TokenStream::new();
@@ -117,10 +118,10 @@ impl Parse for Describe {
             setup_stream = setup.generate();
         }
 
-        let mut teardown_all_stream = TokenStream::new();
-        if let Some(teardown_all) = teardown_all {
-            teardown_all_stream = teardown_all.generate();
-        }
+        //let mut teardown_all_stream = TokenStream::new();
+        // if let Some(teardown_all) = teardown_all {
+        //     teardown_all_stream = teardown_all.generate();
+        // }
 
         let mut teardown_stream = TokenStream::new();
         if let Some(teardown) = teardown {
@@ -132,7 +133,7 @@ impl Parse for Describe {
             setup_all: setup_all_stream,
             setup: setup_stream,
             tests,
-            teardown_all: teardown_all_stream,
+            teardown_all: TokenStream::new(),
             teardown: teardown_stream,
         })
     }

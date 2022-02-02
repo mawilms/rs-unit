@@ -2,7 +2,7 @@
 use proc_macro2::{Ident, TokenStream};
 use quote::quote_spanned;
 
-use crate::keywords::{Describe, Root, Setup, SetupAll, Teardown, TeardownAll, Test};
+use crate::keywords::{Describe, Root, Setup, SetupAll, Teardown, Test};
 
 pub trait Generate {
     fn generate(&self) -> TokenStream;
@@ -39,7 +39,7 @@ impl Generate for Root {
         let root_block = quote_spanned! {ident.span()=>
             #[cfg(test)]
             mod #ident {
-                #[allow(unused_imports)]
+                #[allow(unused_imports,non_snake_case)]
                 use super::*;
 
                 #(#describe_blocks)*
@@ -75,6 +75,7 @@ impl Generate for Describe {
             .collect::<Vec<_>>();
 
         let describe_block = quote_spanned! {ident.span()=>
+            #[allow(unused_imports,unused_variables)]
             mod #ident {
                 use super::*;
                 use std::sync::Once;
@@ -178,9 +179,9 @@ impl Generate for Test {
 impl Generate for Setup {
     fn generate(&self) -> TokenStream {
         let ident = &self.ident;
-        let block = &self.content;
+        let block = &self.content.stmts;
 
-        let setup_block = quote_spanned! (ident.span()=> #block);
+        let setup_block = quote_spanned! (ident.span()=> #(#block)*);
 
         setup_block
     }
@@ -202,9 +203,9 @@ impl Generate for Setup {
 impl Generate for Teardown {
     fn generate(&self) -> TokenStream {
         let ident = &self.ident;
-        let block = &self.content;
+        let block = &self.content.stmts;
 
-        let teardown_block = quote_spanned! (ident.span()=> #block);
+        let teardown_block = quote_spanned! (ident.span()=> #(#block)*);
 
         teardown_block
     }
@@ -214,11 +215,11 @@ impl Generate for Teardown {
 impl Generate for SetupAll {
     fn generate(&self) -> TokenStream {
         let ident = &self.ident;
-        let block = &self.content;
+        let block = &self.content.stmts;
 
         let setup_all_block = quote_spanned! {ident.span()=>
             INIT.call_once(|| {
-                #block
+                #(#block)*
             });
         };
 
@@ -227,17 +228,17 @@ impl Generate for SetupAll {
 }
 
 // Generates a Rust function that is once after the tests were started. These function are located within the modules where they belong to.
-impl Generate for TeardownAll {
-    fn generate(&self) -> TokenStream {
-        let ident = &self.ident;
-        let block = &self.content;
+// impl Generate for TeardownAll {
+//     fn generate(&self) -> TokenStream {
+//         let ident = &self.ident;
+//         let block = &self.content;
 
-        let teardown_all_block = quote_spanned! {ident.span()=>
-            INIT.call_once(|| {
-                #block
-            });
-        };
+//         let teardown_all_block = quote_spanned! {ident.span()=>
+//             INIT.call_once(|| {
+//                 #block
+//             });
+//         };
 
-        teardown_all_block
-    }
-}
+//         teardown_all_block
+//     }
+// }
