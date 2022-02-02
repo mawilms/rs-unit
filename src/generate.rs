@@ -33,7 +33,7 @@ impl Generate for Root {
         let describe_blocks = self
             .describes
             .iter()
-            .map(|d| d.generate())
+            .map(Generate::generate)
             .collect::<Vec<_>>();
 
         let root_block = quote_spanned! {ident.span()=>
